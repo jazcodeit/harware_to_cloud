@@ -24,14 +24,11 @@ void loop() {
   // Reads the echoPin, returns the sound wave travel time in microseconds
   echoValue = pulseIn(echoPin, HIGH);
 
-  if(echoValue > 0 && echoValue <= 600){
-    Serial.println("Too Close!");
+  if(echoValue > 0){
     Serial.println(echoValue);
   } else if(echoValue < 0) {
-    Serial.println("Invalid distance");
-    Serial.println(echoValue);
-  } else if(echoValue > 600) {
-    Serial.println("Safe distance");
-    Serial.println(echoValue);
+    Serial.println("invalid_distance");
+  } else {
+    // do nothing
   }
 }
