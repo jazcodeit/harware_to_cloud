@@ -1,36 +1,55 @@
 import pandas as pd
 import json
+from dotenv import load_dotenv
 import os
-import pyodbc
+import pymssql
 
 # Load environment variables
-server = os.getenv('DATABASE_SERVER')
-database = os.getenv('DATABASE_NAME')
-username = os.getenv('DATABASE_USER')
-password = os.getenv('DATABASE_PASSWORD')
-port = os.getenv('DATABASE_PORT')
-table_name = os.getenv('DATABASE_TABLE')
-driver = '{ODBC Driver 17 for SQL Server}'
+load_dotenv()
+port = 1433 # Default port for SQL Server
+
+# Retrieve .env values
+try:
+    server = os.environ['DATABASE_SERVER']
+    database = os.environ['DATABASE_NAME']
+    username = os.environ['DATABASE_USER']
+    password = os.environ['DATABASE_PASSWORD']
+    table_name = os.environ['DATABASE_TABLE']
+except Exception as e:
+    print(f"Error loading environment variables: {e}")
+    exit(1)
+
+
 
 # Extract data from JSON file
 data = pd.read_json('sensorData.json')
 
 # Data Cleaning
 
-# Connection String for Azure SQL Database
-connection_str = f'DRIVER={driver};SERVER={server};PORT={port};DATABASE={database};UID={username};PWD={password}'
 
+try:
+    # Connect to the database using pymssql
+    conn = pymssql.connect(
+        server=server,
+        user=username,
+        password=password,
+        database=database,
+        port=port
+    )
 
-with pyodbc.connect(connection_str) as conn:
+    # Initialize cursor object
     cursor = conn.cursor()
-    
-    # Load data into Azure SQL Database
-    sql = "INSERT INTO {table_name} (column1, column2) VALUES (?, ?)"
-    values = ("Example Data", 123)
-    
-    # Execute and commit
-    cursor.execute(sql, values)
-    conn.commit()
 
+    query = f"SELECT @@VERSION"
 
-print(data)
+    # Execute the query
+    cursor.execute(query)
+
+    # Fetch all results
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print(row)
+
+except pymssql.Error as e:
+    print(f"An error occurred: {e}")
