@@ -1,6 +1,6 @@
 # Hardware to Cloud
 Simulate extracting data from IoT sensor then storing into Azure SQL Database
-![Process](process.png)
+![Image of How it Works](process.png)
 
 ## Installation
 
