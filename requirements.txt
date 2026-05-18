@@ -1,4 +1,3 @@
 pyserial
-pandas
 dotenv
 pymssql
