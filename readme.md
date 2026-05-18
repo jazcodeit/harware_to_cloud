@@ -8,12 +8,10 @@ This simulates extracting data from IoT and cleaning the data before storing int
 
 2. Setup environment
 ```
+    DATABASE_SERVER=your_db_host
     DATABASE_NAME=your_database_name
     DATABASE_USER=your_db_username
     DATABASE_PASSWORD=your_db_password
-    DATABASE_SERVER=your_db_host
-    DATABASE_TABLE=your_db_table
-    DATABASE_DRIVER="ODBC Driver 17 for SQL Server"
     DATABASE_PORT=your_db_port
 ```
 
