@@ -21,9 +21,9 @@ Simulate extracting data from IoT sensor then storing into Azure SQL Database
 1. Install dependencies <br>
 ```pip install -r requirements.txt```
 
-2. Connect your Ardiuno <br>
+2. Connect your Arduino <br>
 
-3. Open sensors.ino and upload the code to Ardiuno board<br/>
+3. Open sensors.ino and upload the code to Arduino board<br/>
 ```./sensors/sensors.ino```
 
 4. Run portListener.py <br>

@@ -36,7 +36,7 @@ for p in ports:
         currentPort = p.device
 
 
-ardiuno = serial.Serial(currentPort, 9600)
+arduino = serial.Serial(currentPort, 9600)
 print(f"Connected to {currentPort}")
 
 
@@ -93,15 +93,15 @@ def insertData():
 
 
 # Continously loop while sensor data is available
-while ardiuno.readline() is not None:
+while arduino.readline() is not None:
 
 
-    print(f'Sensor Data: {ardiuno.readline().decode("utf-8").strip()}')
+    print(f'Sensor Data: {arduino.readline().decode("utf-8").strip()}')
     print(f'Collector Counter: {collectorCounter}')
 
 
     # store 5 data readings to get the average value 
-    sensorDataSession.append(int(ardiuno.readline().decode("utf-8").strip()))
+    sensorDataSession.append(int(arduino.readline().decode("utf-8").strip()))
 
 
     # if total counts of data collected is 5
