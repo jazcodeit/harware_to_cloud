@@ -1,5 +1,6 @@
 # Hardware to Cloud
-This simulates extracting data from IoT and cleaning the data before storing into Azure SQL Database
+Simulate extracting data from IoT sensor then storing into Azure SQL Database
+![Process](process.png)
 
 ## Installation
 
@@ -27,6 +28,3 @@ This simulates extracting data from IoT and cleaning the data before storing int
 
 4. Run portListener.py <br>
 ```python portListener.py```
-
-5. On seperate terminal run dataETL.py <br>
-```python dataETL.py```
