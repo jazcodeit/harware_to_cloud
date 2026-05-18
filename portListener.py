@@ -3,20 +3,32 @@ import serial.tools.list_ports
 import json
 from datetime import datetime
 import time
+import pandas as pd
+from dotenv import load_dotenv
+import os
+import pymssql
 
-timestamp = datetime.now().strftime("%m-%d-%Y %I:%M:%S%p")
+
+# Load environment variables
+load_dotenv()
+port = 1433 # Default port for SQL Server
+
+
+# Retrieve .env values
+try:
+    server = os.environ['DATABASE_SERVER']
+    database = os.environ['DATABASE_NAME']
+    username = os.environ['DATABASE_USER']
+    password = os.environ['DATABASE_PASSWORD']
+except Exception as e:
+    print(f"Error loading environment variables: {e}")
+    exit(1)
+
+
+# Find current port and initialize
 ports = list(serial.tools.list_ports.comports())
 currentPort = ""
-collectorCounter = 0
-sensorDataSession = []
-sensorDataJson = {
-    "sensorName": {
-        "timestamp": "",
-        "farthestDistance": "",
-        "closestDistance": "",
-        "averageDistance": ""
-    }
-}
+
 
 # Find the port that the arduino is connected to
 for p in ports:
@@ -27,39 +39,146 @@ for p in ports:
 ardiuno = serial.Serial(currentPort, 9600)
 print(f"Connected to {currentPort}")
 
+
+# Initialize fields
+timestamp = 0
+collectorCounter = 0
+sensorDataSession = []
+existing_data = {}
+sensorDataJson = {
+    currentPort: {
+
+    }
+}
+
+
+
+# dataETL functions
+def dataETL():
+
+    print("calling dataETL")
+
+
+    # Extract data from JSON file
+    with open('sensorData.json', 'r') as f:
+        rawData = json.load(f)
+
+
+    # Data Cleaning
+    rawData = rawData[currentPort] # get data from the current port
+    dataFrame = pd.DataFrame.from_dict(rawData, orient='index') # convert raw data to data frame
+
+    dataFrame.reset_index(inplace=True) 
+    dataFrame.rename(columns={'index': 'timestamp'}, inplace=True)
+
+    
+
+    try:
+
+        # Connect to the database using pymssql
+        conn = pymssql.connect(
+            server=server,
+            user=username,
+            password=password,
+            database=database,
+            port=port
+        )
+
+        # Initialize cursor object
+        cursor = conn.cursor()
+
+        query = "INSERT INTO sensor_data (timestamp, farthest_distance, closest_distance, average_distance) VALUES (%s, %s, %s, %s)"
+        dataToLoad = []
+
+
+        # Execute the query
+        for column in dataFrame:
+            dataToLoad.append(dataFrame[column])
+            
+            cursor.execute(query, dataToLoad)
+            conn.commit()   # Commit the transaction
+
+
+        cursor.close()  # Close the cursor
+        conn.close()    # Close the connection
+
+        # Fetch all results
+        #rows = cursor.fetchall()
+
+        #for row in rows:
+        #    print(row)
+
+    except pymssql.Error as e:
+        print(f"An error occurred: {e}")
+
+
+
+# Continously loop while data is available
 while ardiuno.readline() is not None:
     
 
     print(f'Sensor Data: {ardiuno.readline().decode("utf-8").strip()}')
     print(f'Collector Counter: {collectorCounter}')
 
-    sensorDataSession.append(ardiuno.readline().decode("utf-8").strip())
 
+    # store 5 data readings for the current session
+    sensorDataSession.append(int(ardiuno.readline().decode("utf-8").strip()))
+
+
+    # check if 5 data readings have been collected
     if collectorCounter == 4:
+        
 
-        sensorDataJson["sensorName"]["timestamp"] = str(timestamp)
-        sensorDataJson["sensorName"]["farthestDistance"] = "farthest"
-        sensorDataJson["sensorName"]["closestDistance"] = "closest"
-        sensorDataJson["sensorName"]["averageDistance"] = sum(int(x) for x in sensorDataSession) / len(sensorDataSession)
+        try:
+
+            # current date time
+            timestamp = datetime.now().strftime("%m-%d-%Y %I:%M:%S%p")
+
+
+            # with the current session data, we perform calculations to get avg, max, min and store in the dictionary
+            sensorDataJson[currentPort][str(timestamp)] = {
+                "farthest_distance": max(sensorDataSession),
+                "closest_distance": min(sensorDataSession),
+                "average_distance": sum(int(x) for x in sensorDataSession) / len(sensorDataSession)
+            }
+
+
+            # read the existing json data, if it doesnt exist throw an error
+            with open("sensorData.json", "r", encoding="utf-8") as f:
+
+
+                existing_data = json.load(f) # load the existing data
+                print(f"json file exists, appending data...")
+
+
+                # append new key value pairs with the current session data
+                existing_data[currentPort][str(timestamp)] = sensorDataJson[currentPort][str(timestamp)]
+
+
+                # Append data to json file
+                with open("sensorData.json", "w", encoding="utf-8") as f:
+                    json.dump(existing_data, f, indent=4)
+
+            
+
+        except FileNotFoundError as e:
+
+            print(f'File not found, creating a new json file {e}')
+
+            # Create new json file with the current session data
+            with open("sensorData.json", "w", encoding="utf-8") as f:
+                json.dump(sensorDataJson, f, indent=4)
+
+
+        dataETL()
+
+        print("delaying 60 seconds before next read...")   
+        # Delay 60 seconds before reading the next set of data to avoid overwhelming the system and to allow for new data to be generated by the sensor
+        time.sleep(60)
 
         # Reset the collector counter and session data for the next round of data collection
         collectorCounter = 0
         sensorDataSession = []
-        
-        # Dump data to json file for later use in dataETL.py
-        with open("sensorData.json", "w", encoding="utf-8") as f:
-            json.dump(sensorDataJson, f, indent=4)
 
-        print("delaying 1 minute before next read...")   
-        # Delay 60 seconds before reading the next set of data to avoid overwhelming the system and to allow for new data to be generated by the sensor
-        time.sleep(60)
     else:
         collectorCounter += 1
-
-
-
-
-# add to dataframe
-# clean up data
-# send to azure cloud database sql
-# output data using streamlit
