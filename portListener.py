@@ -56,6 +56,7 @@ def insertData():
     # Initialize data for the query
     dataToLoad = [
         sensorDataJson["sensor_data"]['timestamp'], # Access key value pair from the dictionary where the sensor data is stored
+        sensorDataJson["sensor_data"]['device_port'],
         sensorDataJson["sensor_data"]['farthest_distance'], 
         sensorDataJson["sensor_data"]['closest_distance'], 
         sensorDataJson["sensor_data"]['average_distance']
@@ -76,7 +77,7 @@ def insertData():
         cursor = conn.cursor()
 
         # Set sql query
-        query = "INSERT INTO sensor_data (timestamp, farthest_distance, closest_distance, average_distance) VALUES (%s, %s, %s, %s)"
+        query = "INSERT INTO sensor_data (timestamp, device_port, farthest_distance, closest_distance, average_distance) VALUES (%s, %s, %s, %s, %s)"
         
         # Execute sql query with the data values
         cursor.execute(query, dataToLoad)
